@@ -1,9 +1,40 @@
 'use strict'
 //Events
-const GAMESPEED = 100;//ms
+const GAMESPEED = 30;//ms
 //Browser Functions
-window.addEventListener('keydown',this.Keypressed, false);//for whole browser
-window.setInterval(this.CallBack, GAMESPEED);
+let IntervalID;
+let Start = false;
+let Score = 0;
+let ScoreIncrementer = 10;
+function StartFunc(CallBackFunc){
+    if(!Start){
+        window.addEventListener('keydown',this.Keypressed, false);//for whole browser
+        IntervalID = window.setInterval(CallBackFunc, GAMESPEED);
+        Start = true;
+    }
+}
+
+function PauseFunc(){
+    if(Start){
+        window.removeEventListener('keydown',this.Keypressed);//for whole browser
+        window.clearInterval(IntervalID)
+        Start = false;
+    }
+}
+
+function ClearAll(){
+    SnakeArray = []
+    SnakeArray.push(this.SnakeCell())
+    Direction = DirEnum.Right;//Initial Direction
+    Score = 0;
+    this.CallBack();
+    this.PauseFunc();
+};
+//HTML Buttons
+let button = document.querySelectorAll('#btnControl')
+button[0].children[0].addEventListener('click', () => this.StartFunc(this.CallBack))
+button[0].children[1].addEventListener('click', () => this.PauseFunc())
+button[0].children[2].addEventListener('click', () => this.ClearAll())
 //ENUM for Direction
 const DirEnum = Object.freeze({"Left":37, "Up":38, "Right":39, "Down":40})
 //canvas Settings
@@ -15,10 +46,9 @@ let context = canvas.getContext("2d")
 let rows,cols;
 rows = cols = 50;
 let BoxH = 2*canvas.height/rows, BoxW = 2*canvas.width/cols;
-let grid;
 let SnakeArray = [];//Snake parts
 let Direction = DirEnum.Right;//Initial Direction
-const MovStep = BoxW;//Step To move by the snake, It may make the snake continous(for beeter visuals) and it can change the peed as well(not recommend this way speed change)
+const MovStep = BoxW/2;//Step To move by the snake, It may make the snake continous(for beeter visuals) and it can change the peed as well(not recommend this way speed change)
 
 let RandomSnakeDiet = () => {
     return new Cell(Math.random()*(canvas.width-BoxW), Math.random()*(canvas.height-BoxH), "blue");//-BoxW so that It will remain in arena
@@ -37,6 +67,8 @@ function Cell(x, y, rectColor = "green", borderColor="white", h=BoxH, w=BoxW) {/
         context.fillStyle = this.rectColor  //rectangle color
         context.strokeStyle = this.borderColor //border color
         context.fillRect(this.x, this.y, BoxW,BoxH)
+        context.font = "18px Arial";
+        context.fillText(`Score: ${Score}`, canvas.width - 100, 20);
         context.stroke()
     }
 
@@ -47,7 +79,7 @@ function Cell(x, y, rectColor = "green", borderColor="white", h=BoxH, w=BoxW) {/
     this.MoveLeft = () => {
         this.x = (this.x - MovStep);
         if(this.x < 0)
-            this.x = canvas.width;
+            this.x = canvas.width-MovStep;
     }
 
     this.MoveRight = () => {
@@ -57,7 +89,7 @@ function Cell(x, y, rectColor = "green", borderColor="white", h=BoxH, w=BoxW) {/
     this.MoveUp = () => {
         this.y = (this.y - MovStep);
         if(this.y < 0)
-            this.y = canvas.height;
+            this.y = canvas.height-MovStep;//-MovStep So it may not disppear
     }
 
     this.MoveDown = () => {//On cell move down
@@ -84,24 +116,14 @@ function Cell(x, y, rectColor = "green", borderColor="white", h=BoxH, w=BoxW) {/
     } 
 };
 
-let Init_and_DrawBoard = () => {
-    grid = new Array(rows)
-    for(let i=0; i<rows; i++)
-    grid[i] = new Array(cols)
-    this.DrawBoard()
-};Init_and_DrawBoard();
-
 function DrawBoard(){
     //Draw Board
-    for(let i = 0; i < grid.length; i++)
-        for(let j = 0; j < grid[0].length; j++){
-            grid[i][j] = new Cell(i*BoxW,j*BoxH)
-            grid[i][j].show()
-        }
-}
+    context.fillStyle = "white";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+};DrawBoard();
 
 function SnakeCell(){
-    let cell = new Cell(-BoxH,0,"brown");
+    let cell = new Cell(-BoxH,0,"black");
     cell.show()
     return cell;
 } 
@@ -115,9 +137,7 @@ function Keypressed(e) {
         case DirEnum.Down: Direction = DirEnum.Down; break; //Down key
     }
 }
-//button[0].children[1].addEventListener('click', Start)
-//button[0].children[2].addEventListener('click', Pause)
-//button[0].children[2].addEventListener('click', Stop)
+
 function CallBack(){
     let X = SnakeArray[0].x;
     let Y = SnakeArray[0].y;
@@ -153,6 +173,7 @@ function MoveAllParts_And_ShowSnake(X,Y){
 
 function CheckSnakeDietHit(){
     if(SnakeArray[0].Intersection(SnakeDiet)){
+        Score += ScoreIncrementer;
         SnakeArray.push(this.SnakeCell())
         SnakeDiet = RandomSnakeDiet()
     }
